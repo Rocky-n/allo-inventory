@@ -2,7 +2,7 @@
 
 A high-concurrency inventory reservation platform built to eliminate checkout race conditions. 
 
-**Live Demo:** 
+**Live Demo:** https://allo-inventory-pr.vercel.app/
 
 ## System Architecture & Tech Stack
 * **Frontend:** Next.js (App Router), Tailwind CSS, shadcn/ui
