@@ -6,6 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
+import { Timer, CheckCircle2, XCircle, ShoppingBag, Loader2 } from "lucide-react"
 
 type Reservation = {
   id: string
@@ -52,7 +53,6 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
 
   const handleAction = async (action: 'confirm' | 'release') => {
     setIsProcessing(true)
-    // Generate a unique ID for this specific confirmation/cancellation attempt
     const idempotencyKey = crypto.randomUUID()
 
     try {
@@ -83,7 +83,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
     }
   }
 
-  if (!reservation) return <div className="p-8 text-center">Loading secure checkout...</div>
+  if (!reservation) return <div className="p-8 text-center flex justify-center items-center h-[50vh]"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60).toString().padStart(2, '0')
@@ -92,50 +92,81 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
   }
 
   return (
-    <main className="container mx-auto p-8 max-w-lg">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex justify-between items-center">
-            Checkout
+    <div className="container mx-auto px-4 py-16 max-w-lg">
+      <Card className="border-slate-200 shadow-lg overflow-hidden">
+        {/* Status Header */}
+        <div className={`h-2 w-full ${
+          reservation.status === 'CONFIRMED' ? 'bg-green-500' : 
+          reservation.status === 'RELEASED' ? 'bg-red-500' : 'bg-primary'
+        }`} />
+        
+        <CardHeader className="space-y-1 pb-6">
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                <ShoppingBag className="w-5 h-5" />
+                Secure Checkout
+              </CardTitle>
+              <p className="text-sm text-slate-500 mt-1">Order ID: <span className="font-mono text-xs">{reservation.id.split('-')[0]}</span></p>
+            </div>
             <Badge variant={
               reservation.status === 'CONFIRMED' ? 'default' : 
-              reservation.status === 'RELEASED' ? 'destructive' : 'outline'
-            }>
+              reservation.status === 'RELEASED' ? 'destructive' : 'secondary'
+            } className="px-3 py-1 text-xs uppercase tracking-wider">
               {reservation.status}
             </Badge>
-          </CardTitle>
+          </div>
         </CardHeader>
+
         <CardContent className="space-y-6">
+          {/* Active Timer Alert */}
           {reservation.status === 'PENDING' && timeLeft > 0 && (
-            <div className="bg-muted p-4 rounded-lg text-center">
-              <p className="text-sm text-muted-foreground mb-1">Time remaining to complete purchase</p>
-              <p className="text-3xl font-mono font-bold text-red-500">{formatTime(timeLeft)}</p>
+            <div className="bg-red-50 border border-red-100 p-4 rounded-xl flex items-center justify-between">
+              <div className="flex items-center gap-3 text-red-600">
+                <Timer className="w-5 h-5 animate-pulse" />
+                <span className="font-medium text-sm">Hold expires in</span>
+              </div>
+              <span className="text-2xl font-mono font-bold text-red-600 tracking-tighter">
+                {formatTime(timeLeft)}
+              </span>
             </div>
           )}
-          <div className="border-t pt-4">
-            <p className="font-medium">Order Summary</p>
-            <div className="flex justify-between text-sm mt-2">
-              <span>Item Quantity</span>
-              <span>{reservation.quantity} Unit(s)</span>
+
+          {/* Receipt Details */}
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-3">
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Order Summary</p>
+            <div className="flex justify-between text-sm items-center">
+              <span className="text-slate-600 font-medium">Reserved Quantity</span>
+              <span className="font-semibold bg-white px-2 py-1 rounded border shadow-sm">{reservation.quantity} Unit(s)</span>
+            </div>
+            <div className="flex justify-between text-sm items-center pt-2 border-t border-slate-200">
+              <span className="text-slate-600">Subtotal</span>
+              <span className="font-medium">₹12,499</span>
             </div>
           </div>
         </CardContent>
-        <CardFooter className="flex justify-between border-t pt-4">
+
+        {/* FIX: grid-cols-2 forces both buttons to take up exactly 50% space */}
+        <CardFooter className="grid grid-cols-2 gap-3 border-t bg-slate-50/50 p-6">
           <Button 
             variant="outline" 
+            className="w-full"
             onClick={() => handleAction('release')}
             disabled={reservation.status !== 'PENDING' || isProcessing}
           >
-            Cancel Order
+            {isProcessing && reservation.status === 'PENDING' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <XCircle className="w-4 h-4 mr-2" />}
+            Cancel
           </Button>
           <Button 
+            className="w-full"
             onClick={() => handleAction('confirm')}
             disabled={reservation.status !== 'PENDING' || isProcessing || timeLeft === 0}
           >
-            Confirm Purchase
+            {isProcessing && reservation.status === 'PENDING' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+            Confirm Pay
           </Button>
         </CardFooter>
       </Card>
-    </main>
+    </div>
   )
 }
