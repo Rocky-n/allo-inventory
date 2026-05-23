@@ -30,19 +30,24 @@ export default function Home() {
 
   const handleReserve = async (productId: string, warehouseId: string) => {
     setLoadingId(`${productId}-${warehouseId}`)
+    // Generate a unique ID for this specific reservation attempt
+    const idempotencyKey = crypto.randomUUID() 
+
     try {
       const res = await fetch('/api/reservations', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Idempotency-Key': idempotencyKey 
+        },
         body: JSON.stringify({ productId, warehouseId, quantity: 1 }),
       })
 
       const data = await res.json()
 
       if (!res.ok) {
-        // Catch the 409 Concurrency / Out of Stock Error
         toast.error(data.error || "Failed to reserve item.")
-        fetchProducts() // Refresh stock numbers
+        fetchProducts() 
         return
       }
 

@@ -22,20 +22,13 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
   const router = useRouter()
 
   useEffect(() => {
-    // We fetch directly from the DB via a quick internal API call or a server action.
-    // For simplicity, we'll assume the reservation details are passed or we just rely on the timer.
-    // In a full app, you'd fetch the reservation details by ID here first.
-    // For this exercise, we will hardcode a mock fetch to simulate loading the reservation:
     const loadReservation = async () => {
-      // Since we don't have a GET /api/reservations/:id, we use local state logic
-      // Assuming a 10-minute expiry from right now for demonstration if state isn't passed:
       const mockExpiry = new Date(Date.now() + 10 * 60 * 1000).toISOString()
       setReservation({ id: resolvedParams.id, status: 'PENDING', expiresAt: mockExpiry, quantity: 1 })
     }
     loadReservation()
   }, [resolvedParams.id])
 
-  // Live Timer Logic
   useEffect(() => {
     if (!reservation || reservation.status !== 'PENDING') return
 
@@ -59,14 +52,19 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
 
   const handleAction = async (action: 'confirm' | 'release') => {
     setIsProcessing(true)
+    // Generate a unique ID for this specific confirmation/cancellation attempt
+    const idempotencyKey = crypto.randomUUID()
+
     try {
       const res = await fetch(`/api/reservations/${resolvedParams.id}/${action}`, {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+          'Idempotency-Key': idempotencyKey
+        }
       })
       const data = await res.json()
 
       if (!res.ok) {
-        // Catch 410 Expired Error
         toast.error(data.error || `Failed to ${action} reservation.`)
         if (res.status === 410) router.push('/')
         return
